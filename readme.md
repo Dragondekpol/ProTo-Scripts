@@ -26,4 +26,4 @@ Max $$$
 Download & extract archive
 
 ###2.
-Load AllroundScript.lua
+Load Level Script.lua
