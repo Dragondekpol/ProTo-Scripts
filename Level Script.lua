@@ -3,6 +3,8 @@ name = "ProTo's Script"
 author = "ProTo"
 description = [[
 -------------------------------------
+HINT: This script was made while high. Try to check every possibility, if something is missing message me on Discord.
+WARNING: Using rebuy might end you up in jail. Since the Pathfinder walks through some serverside check`s!
 Usage: Press on 'Show Settings', then configurate the script.
 Options: Place to level/farm - Desired place like 'Route 8' without ''!
 Options: Desired Pokemon - Name of the Pokemon your hunting like 'Abra' without ''!
@@ -36,8 +38,8 @@ maxlevel = 100
 -- ## End Settings
 
 -- ## GUI Settings
-tab = {"Catch Uncaught", "Catch desired Pokemon", "Level Bot"}
-for i = 1, 3 do
+tab = {"Catch Uncaught", "Catch desired Pokemon", "Level Bot", "Rebuy"}
+for i = 1, 4 do
 	setOptionName(i, tab[i] .. "")
 	setTextOptionName(1, "Place to level/farm ")
 	setTextOption(1, getMapName())
@@ -49,8 +51,10 @@ for i = 1, 3 do
 	setTextOption(4, maxlevel)
 	setTextOptionName(5, "Ball to catch/buy")
 	setTextOption(5, "Pokeball")
-	setTextOptionName(6, "Max $$$")
-	setTextOption(6, "500000")
+	setTextOptionName(6, "x? rebuy")
+	setTextOption(6, "5")
+	setTextOptionName(7, "Max $$$")
+	setTextOption(7, "500000")
 end
 -- ## End GUI Settings
 
@@ -76,7 +80,7 @@ function onPathAction()
 	if tonumber(getTextOption(4)) == tonumber(getPokemonLevel(1)) or tonumber(getTextOption(4)) < tonumber(getPokemonLevel(1)) then
 		log("Reached level: " .. getTextOption(4))
 		fatal()
-	elseif (getMoney() == tonumber(getTextOption(6))) or (getMoney() > tonumber(getTextOption(6))) then
+	elseif (getMoney() == tonumber(getTextOption(7))) or (getMoney() > tonumber(getTextOption(7))) then
 		log("Reached $$$: " .. getMoney() .. "P$")
 		fatal()
 	elseif isPokemonUsable(1) and getItemQuantity(getTextOption(5)) > 5 then
@@ -94,16 +98,14 @@ function onPathAction()
 	elseif not isPokemonUsable(1) then
 		log(" - -  Need Pokecenter  - -")
 		PathFinder.useNearestPokecenter(map)
-	--elseif getItemQuantity(getTextOption(5)) < 5 and getMoney() > 1000 then  ## IDK how2 PokeMart
-		--pathFinder.useNearestPokemart(getMapName(), "Pokeball", 5)
-		--## For Lavender Mart
-		--if getMapName() == "Lavender Pokemart" and getItemQuantity("Great Ball") < 5 and getMoney() >= 6000 then
-		--	if not isShopOpen() then
-		--		talkToNpcOnCell(3, 5)
-		--	else
-		--		buyItem("Great Ball", 10)
-		--	end
-		--end
+	elseif (getItemQuantity(getTextOption(5)) < 5 and getMoney() > 1000) and (getOption(6) == true) then  --## IDK how2 PokeMart
+		log(" - -  Need Pokemart  - -")
+		if getMapName() == "Route 22" then
+			log("You dont wan`t to go to jail or? Use rebuy later! Buy Balls yourself then start the bot!")
+			fatal()
+		else
+			PathFinder.useNearestPokemart(map, getTextOption(5), tonumber(getTextOption(6)))
+		end
 	elseif (getOption(2) == false) then
 		if isPokemonUsable(1) and getMapName() == getTextOption(1) then
 			if getTextOption(3) == "Water" then
@@ -120,40 +122,8 @@ function onPathAction()
 end
 
 function onBattleAction()
-	if isWildBattle() and (isOpponentShiny() or isAlreadyCaught() == false and getOption(1) == true) then
-		if getOpponentName() == getTextOption(2) and getOption(2) == true then
-			if isPokemonUsable(1) and (getItemQuantity(getTextOption(5)) > 0 or getItemQuantity("Great Ball") > 0 or getItemQuantity("Ultra Ball") > 0 or getItemQuantity("Pokeball") > 0) then
-				catchFunction()
-			elseif getOption(3) == true then
-				return attack() or run() or sendUsablePokemon() or sendAnyPokemon()
-			else
-				return run()
-			end
-		elseif getOption(3) == true then
-			return attack() or run() or sendUsablePokemon() or sendAnyPokemon()
-		else
-			return run()
-		end
-	elseif isWildBattle() and getOpponentName() == getTextOption(2) and getOption(2) == true then
-		if (getItemQuantity(getTextOption(5)) > 0 or getItemQuantity("Great Ball") > 0 or getItemQuantity("Ultra Ball") > 0 or getItemQuantity("Pokeball") > 0) then
-			catchFunction()
-		elseif getOption(3) == true then
-			return attack() or run() or sendUsablePokemon() or sendAnyPokemon()
-		else
-			return run()
-		end
-	elseif isWildBattle() and (getOption(3) == true) and not isOpponentShiny() then
-		return attack() or run() or sendUsablePokemon() or sendAnyPokemon()
-	elseif isWildBattle() and isOpponentShiny() then
-		if (getItemQuantity(getTextOption(5)) > 0 or getItemQuantity("Great Ball") > 0 or getItemQuantity("Ultra Ball") > 0 or getItemQuantity("Pokeball") > 0) then
-			catchFunction()
-		else
-			missedshinies = missedshinies + 1
-			return attack() or run() or sendUsablePokemon() or sendAnyPokemon()
-		end
-	else
-		return run()
-	end
+	-- Removed old shit
+	return checkOperation()
 end
 
 function onBattleMessage(wild)
@@ -191,6 +161,39 @@ function catchFunction()
 		useItem("Great Ball")
 	elseif isPokemonUsable(1) and getItemQuantity("Ultra Ball") > 0 then
 		useItem("Ultra Ball")
+	end
+end
+
+function checkOperation() -- New Catch Function made while stoned second try
+	if (getOption(1) == true and isAlreadyCaught() == false) and not isOpponentShiny() then -- Catch Uncaught
+		if isPokemonUsable(1) and (getItemQuantity(getTextOption(5)) > 0 or getItemQuantity("Great Ball") > 0 or getItemQuantity("Ultra Ball") > 0 or getItemQuantity("Pokeball") > 0) then
+			return catchFunction()
+		else
+			return run()
+		end
+	elseif (getOption(2) == true and getOpponentName() == getTextOption(2)) and not isOpponentShiny() then -- Catch desired
+		if isPokemonUsable(1) and (getItemQuantity(getTextOption(5)) > 0 or getItemQuantity("Great Ball") > 0 or getItemQuantity("Ultra Ball") > 0 or getItemQuantity("Pokeball") > 0) then
+			return catchFunction()
+		else
+			return run()
+		end
+	elseif getOption(3) == true and not isOpponentShiny() then -- Level Bot
+		if getOption(1) == true and isAlreadyCaught() == true then
+			return attack() or run() or sendUsablePokemon() or sendAnyPokemon()
+		elseif getOption(1) == true and isAlreadyCaught() == false then
+			return catchFunction()
+		else
+			return attack() or run() or sendUsablePokemon() or sendAnyPokemon()
+		end
+	elseif isOpponentShiny() then -- Shiny encounter
+		if isPokemonUsable(1) and (getItemQuantity(getTextOption(5)) > 0 or getItemQuantity("Great Ball") > 0 or getItemQuantity("Ultra Ball") > 0 or getItemQuantity("Pokeball") > 0) then
+			return catchFunction()
+		else
+			missedshinies = missedshinies + 1
+			return run()
+		end
+	else -- Nothing
+		return run()
 	end
 end
 -- ## End Functions
